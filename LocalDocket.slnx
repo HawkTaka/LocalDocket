@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="LocalDocket.App/LocalDocket.App.csproj" />
+  <Project Path="LocalDocket.Cli/LocalDocket.Cli.csproj" />
+  <Project Path="LocalDocket.Core/LocalDocket.Core.csproj" />
+  <Project Path="LocalDocket.Extract/LocalDocket.Extract.csproj" />
+  <Project Path="LocalDocket.Llm/LocalDocket.Llm.csproj" />
+  <Project Path="LocalDocket.Tests/LocalDocket.Tests.csproj" />
+</Solution>

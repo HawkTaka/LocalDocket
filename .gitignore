@@ -1,0 +1,11 @@
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+*.db
+*.db-wal
+*.db-shm
+*.log
+publish/
+private/

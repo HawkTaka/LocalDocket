@@ -1,0 +1,199 @@
+# Local Docket taxonomy — a starter you edit to match your own folders. The tray app picks up changes on its next tick
+# (a few seconds) and rejects nothing silently: unknown keys under settings: are reported in the log and a tray balloon.
+# Path templates may use {yyyy} {yyyy-MM} {yyyy-MM-dd} (from the file's modified date), {env} (Production|UAT|DEV|Local),
+# {client}, {ticket} (e.g. PROJ-453), {project}.
+
+roots:
+  Work: 'D:\Work'
+  Personal: 'D:\Personal'
+
+inbox: '%USERPROFILE%\Desktop\_Inbox'
+
+settings:
+  autoFileConfidence: 0.85
+  escalateBelow: 0.60          # re-ask the escalation model when the first model is this unsure
+  settleSeconds: 5
+  groupWindowSeconds: 90
+  contentCapBytesPerFile: 4096
+  model: qwen3.5:9b
+  escalationModel: qwen3:30b-a3b-instruct-2507-q4_K_M
+  embedModel: nomic-embed-text
+  imageVision: true          # send a downscaled copy of images to the model (needs a vision-capable model)
+  imageMaxEdge: 1024
+  # One or two sentences about who the documents belong to; the classifier reads this before every decision.
+  profile: 'You file documents for a software developer who builds a line-of-business product (.NET, SQL Server, Docker) and tracks work in tickets like PROJ-123.'
+  atomicMarkers: ['.git', '*.sln', '*.csproj', 'package.json', 'docker-compose.yml']
+  # Never scanned or indexed for chat. An absolute path excludes that folder and everything below; 'Infra\Deploy' is
+  # taken under each root; a bare name (e.g. node_modules) matches any folder. .git/bin/obj/node_modules etc. are built in.
+  excludeFolders: ['D:\Personal\Repo', 'Infra\Deploy', 'Infra\Site', 'Passwords']
+  indexSkipRepos: true       # any folder holding an atomicMarkers hit (.git, *.sln, ...) is source code: never indexed
+  # Privacy: files in these categories keep their provenance row but are never chunked for chat.
+  indexSkipCategories: [Work/HR, Work/Team, Work/Product/Imports]
+  # Defaults you can override (shown for reference):
+  #   indexSkipNames: ['.env', '.env.*', 'id_rsa*', 'id_ed25519*', 'known_hosts', '*.secrets*', 'appsettings*.json', 'web.config', '*credential*', '*password*', ...]
+  #   indexSkipExtensions: [.exe, .dll, .pdb, .iso, .vhdx, .msi, .nupkg, .mp4, .mkv, .mov, .bak, .trn, .db, .sqlite, .kdbx, .pem, .key, .ppk, .pfx, .p12, .cer, .crt, ...]
+  #   indexSkipSensitiveChunks: true      # withhold chunks that look like private keys, connection strings or tokens
+  #   indexCapBytesPerFile: 200000        # text read per file for the index (the classifier keeps contentCapBytesPerFile)
+  #   indexChunkChars: 3200  indexChunkOverlapChars: 480  indexMaxChunksPerFile: 64  indexMaxFileMB: 64
+  #   indexEmbedBatch: 16  indexThrottleMs: 50  indexRecrawlMinutes: 60
+  #   chatModel: (model)  chatNumCtx: 16384  chatTopK: 24  chatContextChars: 24000  chatExtractFilters: true
+  #   ollamaUrl: http://localhost:11434   keepAlive: 10m   thinking: false
+  # .bak header -> environment. Server host names as they appear in the backup header.
+  bakServers:
+    SQL-UAT-01: UAT
+  # Regexes over the backup's database / logical file names.
+  bakNamePatterns:
+    '(?i)_Dev': DEV
+    '(?i)_UAT': UAT
+    '(?i)_Prod(uction)?': Production
+    '(?i)^local|_local': Local
+
+# Questions the classifier may attach to a group. The popup renders them as chips.
+questions:
+  environment: { prompt: 'Which environment?', options: [Production, UAT, DEV, Local, Mixed] }
+  domain:      { prompt: 'Work or personal?',   options: [Work, Personal] }
+  client:      { prompt: 'Which client?',       options: [Acme, Globex, Initech, Umbrella], allowAdd: true }
+
+categories:
+
+  # ---------------- Work ----------------
+  Work/SQL/Backups:
+    path: 'SQL\Database Backups\{env}\{yyyy-MM-dd}'
+    match: ['*.bak', '*.trn', 'MongoBackups*.zip', '*Database Files*.zip']
+    ask: [environment]
+    notes: 'Environment from the backup header (database / server name) when readable, else ask.'
+  Work/SQL/Scripts:
+    path: 'SQL\Scripts\{env}'
+    match: ['*.sql']
+    ask: [environment]
+  Work/Product/Exports:
+    path: 'Product\Exports\{yyyy-MM}'
+    match: ['*.export', '*.export.json']
+  Work/Product/Imports:
+    path: 'Product\Import Data'
+    hint: 'Payroll / bulk upload spreadsheets destined for the product'
+  Work/Spec:
+    path: 'Spec\{ticket}'
+    match: ['PROJ-*_PLAN.md', 'PROJ-*_BUILD_NOTES.md', '*Specification*.md', '*_Scope*.md']
+    hint: 'Ticket plans, specs, design notes. {ticket} falls back to the project name.'
+  Work/Jira:
+    path: 'Jira'
+    match: ['create_*_tickets.py', 'update_tickets.py', 'open-tickets.json', 'PROJ-*.md', 'Bug-*.md', '*Jira-Ticket*.md', 'Jira.csv']
+    hint: 'Ticket scripts and registers.'
+  Work/Clients:
+    path: 'Documents\Clients\{client}'
+    ask: [client]
+    hint: 'Contracts, MSAs, client data, take-on packs, client-specific process docs.'
+  Work/HR:
+    path: 'Documents\HR\{yyyy}'
+    match: ['*Leave*', '*Pay Slip*', '*Payslip*', '*Offer Letter*', 'HR Documents*']
+    hint: 'HR templates, leave forms, payslips, offer letters, onboarding packs.'
+  Work/Reports:
+    path: 'Documents\Reports\{yyyy}'
+    match: ['Fleet Report*', 'Timesheet_*', '*Work Report*', 'Monthly Report*']
+  Work/Training:
+    path: 'Training\{project}'
+    match: ['*_Course*', '*Training*', '*Train-the-Trainer*', '*.mp4']
+  Work/Presentations:
+    path: 'Documents\Presentations'
+    match: ['*.pptx', '*Show*Tell*']
+  Work/Infra/Docker:
+    path: 'Infra\Deploy'
+    hint: 'Deploy artefacts: compose files, publish outputs, environment setup notes.'
+  Work/Infra/Backups:
+    path: 'Infra\Backups\{yyyy-MM-dd}'
+    hint: 'Non-database backups: web server config, VM exports.'
+  Work/Infra/Site:
+    path: 'Infra\Site'
+    hint: 'Website sources and exports.'
+  Work/Branding:
+    path: 'Documents\Branding'
+    match: ['*Email Signature*', '*logo*', '*letterhead*']
+    hint: 'Email signatures, logos, letterheads.'
+  Work/Logs:
+    path: 'Logs\{yyyy-MM}'
+    match: ['*.log', 'BuildLogs.txt', 'Pipeline Log.txt', '*.exe.txt']
+  Work/Screenshots:
+    path: 'Media\Screenshots\{yyyy-MM}'
+    match: ['Screenshot 20*.png', '*.gif']
+    hint: 'Product screenshots and demo gifs.'
+  Work/Prompts:
+    path: 'Prompts'
+    match: ['*Prompt*.md']
+  Work/Team:
+    path: 'Documents\Team\Reviews\{yyyy}'
+    match: ['Probation_Review_*', 'Probation_Reviews_*', 'DevTeamReview*', 'Team_Work_Report_*']
+    hint: 'Team reviews and feedback (about people who report to you).'
+  Work/Archive:
+    path: 'Archive\{yyyy}'
+    hint: 'Superseded copies ("Copy of ...").'
+  Work/Keep:
+    path: ''
+    hint: 'Never touched by Scan.'
+    frozen: ['Notes Vault', 'Research', 'Documents\Sample Documents', 'Documents\Presentations']
+
+  # ---------------- Personal ----------------
+  Personal/Career/Reviews:
+    path: 'Career\Reviews\{yyyy}'
+    match: ['My_Review*', '6Month_Review*', 'Manager_Feedback*']
+    hint: 'Reviews and feedback about you.'
+  Personal/Career/Profile:
+    path: 'Career\Profile'
+    match: ['LinkedIn_*', 'CV*', 'Resume*']
+  Personal/Projects:
+    path: 'Projects\{project}'
+    hint: 'Personal code and side projects, one folder each. Git repositories under Repo\ stay there.'
+  Personal/Homelab:
+    path: 'Homelab\{project}'
+    hint: 'VM scripts, container experiments, network notes.'
+  Personal/Scopes:
+    path: 'Scopes'
+    match: ['*Project_Scope*.md']
+  Personal/Documents:
+    path: 'Documents\{yyyy}'
+    hint: 'Anything personal that is not career or project.'
+  Personal/Media/Photos:
+    path: 'Media\Photos\{yyyy-MM}'
+    match: ['*.jpeg', '*.jpg', '*.heic']
+    hint: 'Only when the image is not a product screenshot.'
+  Personal/Media/Screenshots:
+    path: 'Media\Screenshots\{yyyy-MM}'
+  Personal/Scripts:
+    path: 'Scripts'
+    match: ['build_*.py', '*.ps1']
+  Personal/Archive:
+    path: 'Archive\{yyyy}'
+  Personal/Keep:
+    path: ''
+    frozen: ['Passwords', 'Repo', 'Tools']
+
+# Deterministic rules run before the model. First match wins. Confidence is 1.0.
+rules:
+  - name: prod-backup
+    when: { name: '(?i)Product_Production|_Prod\.bak$' }
+    set:  { category: Work/SQL/Backups, environment: Production }
+  - name: uat-backup
+    when: { name: '(?i)_UAT|Product_UAT', ext: ['.bak', '.zip'] }
+    set:  { category: Work/SQL/Backups, environment: UAT }
+  - name: local-pre-restore
+    when: { name: '^local-pre-' }
+    set:  { category: Work/SQL/Backups, environment: Local }
+  - name: prod-sql-script
+    when: { name: '(?i)_Prod(uction)?(_Applied)?.*\.sql$' }
+    set:  { category: Work/SQL/Scripts, environment: Production }
+  - name: product-package
+    when: { ext: ['.export'] }
+    set:  { category: Work/Product/Exports }
+  - name: ticket-plan
+    when: { name: '^PROJ-\d+.*\.md$' }
+    set:  { category: Work/Spec, ticket: '{match:PROJ-\d+}' }
+  - name: unknown-bak
+    when: { ext: ['.bak'], content_not: '(?i)Product|Hangfire' }
+    ask:  [domain, environment]
+    notes: 'Backup that does not look like the product database: ask Work/Personal first.'
+  - name: my-reviews
+    when: { name: '(?i)My_Review|6Month_Review|Manager_Feedback' }
+    set:  { category: Personal/Career/Reviews }
+  - name: shortcuts
+    when: { ext: ['.lnk', '.url'] }
+    set:  { action: skip }

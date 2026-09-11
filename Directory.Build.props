@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Product>Local Docket</Product>
+    <Company>Local Docket</Company>
+    <Copyright>2026</Copyright>
+    <Description>Files your inbox with a local LLM, indexes your documents into SQLite, and answers questions about them with citations.</Description>
+  </PropertyGroup>
+</Project>
